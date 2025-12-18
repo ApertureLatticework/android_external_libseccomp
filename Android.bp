@@ -1,0 +1,28 @@
+// Export public headers
+cc_library_headers {
+    name: "libseccomp-headers",
+    vendor: true,
+    export_include_dirs: ["include"],
+}
+
+// Shared library only: generates libseccomp.so
+cc_library_shared {
+    name: "libseccomp",
+    vendor: true,
+
+    srcs: [
+        "src/*.c",
+    ],
+
+    header_libs: ["libseccomp-headers"],
+    export_include_dirs: ["include"],
+
+    cflags: [
+        "-Wno-error",
+        "-fvisibility=hidden",
+        "-DPIC",
+        "-Umips",
+    ],
+    ldflags: ["-Wl,-z,relro"],
+    version_script: "libseccomp.map",
+}

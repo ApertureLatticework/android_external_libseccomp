@@ -1,0 +1,7 @@
+{
+    global:
+        scmp_*;
+        seccomp_*;
+    local:
+        *;
+};
