@@ -365,8 +365,12 @@ struct scmp_arg_cmp {
 #define SCMP_ACT_KILL		SCMP_ACT_KILL_THREAD
 /**
  * Throw a SIGSYS signal
+ *
+ * The Linux kernel supports a 16-bit parameter for the TRAP action, but
+ * libseccomp v2.6.x and older did not support or utilize this parameter.
  */
-#define SCMP_ACT_TRAP		0x00030000U
+#define SCMP_ACT_TRAP		SCMP_ACT_TRAPX(0)
+#define SCMP_ACT_TRAPX(x)	(0x00030000U | ((x) & 0x0000ffffU))
 /**
  * Notifies userspace
  */
@@ -405,6 +409,24 @@ struct seccomp_notif_resp {
 	__s32 error;
 	__u32 flags;
 };
+
+#endif
+
+/* seccomp_notif_addfd and ADDFD_FLAG_SETFD was added in kernel v5.10 */
+#ifndef SECCOMP_ADDFD_FLAG_SETFD
+#define SECCOMP_ADDFD_FLAG_SETFD        (1UL << 0)
+struct seccomp_notif_addfd {
+	__u64 id;
+	__u32 flags;
+	__u32 srcfd;
+	__u32 newfd;
+	__u32 newfd_flags;
+};
+#endif
+
+/* Addfd and return it, atomically. ADDFD_FLAG_SEND was added in kernel 5.14 */
+#ifndef SECCOMP_ADDFD_FLAG_SEND
+#define SECCOMP_ADDFD_FLAG_SEND        (1UL << 1)
 #endif
 
 /*
@@ -813,6 +835,18 @@ int seccomp_notify_id_valid(int fd, uint64_t id);
  *
  */
 int seccomp_notify_fd(const scmp_filter_ctx ctx);
+
+/**
+ * Install a file descriptor into the target's process.
+ * @param fd the notification fd
+ * @param addfd the addfd structure
+ *
+ * This function enables the caller to install/add a fd into the
+ * target's fd table. Returns the installed fd number on success and,
+ * negative values on failure.
+ *
+ */
+int seccomp_notify_addfd(int fd, struct seccomp_notif_addfd *addfd);
 
 /**
  * Generate seccomp Pseudo Filter Code (PFC) and export it to a file

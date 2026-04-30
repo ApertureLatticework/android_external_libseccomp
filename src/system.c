@@ -196,7 +196,7 @@ int sys_chk_seccomp_action(uint32_t action)
 		return state.sup_kill_process;
 	} else if (action == SCMP_ACT_KILL_THREAD) {
 		return 1;
-	} else if (action == SCMP_ACT_TRAP) {
+	} else if (action == SCMP_ACT_TRAPX(action & 0x0000ffff)) {
 		return 1;
 	} else if ((action == SCMP_ACT_ERRNO(action & 0x0000ffff)) &&
 		   ((action & 0x0000ffff) < MAX_ERRNO)) {
@@ -572,4 +572,27 @@ int sys_notify_id_valid(int fd, uint64_t id)
 	if (rc < 0)
 		return -ENOENT;
 	return 0;
+}
+
+/**
+ * Install a file descriptor into the target's process.
+ * @param fd the notification fd
+ * @param addfd the addfd structure
+ *
+ * Install a file descriptor into the target's process. Returns the
+ * installed fd number on success, negative values on failure.
+ *
+ */
+int sys_notify_addfd(int fd, struct seccomp_notif_addfd *addfd)
+{
+	int rc;
+	if (state.sup_user_notif <= 0)
+		return -EOPNOTSUPP;
+
+	rc = ioctl(fd, SECCOMP_IOCTL_NOTIF_ADDFD, addfd);
+	if (rc < 0 && errno == EINVAL)
+		return -EOPNOTSUPP;
+	if (rc < 0)
+		return -ECANCELED;
+	return rc;
 }
